@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FlowTracker Pro+ • Focused You</title>
+<style>
+:root{
+  --bg:#f0f4f8; --card:#ffffff; --text:#111827; --accent:#4f46e5;
+  --done:#16a34a; --pending:#d1d5db; --high:#dc2626; --medium:#f59e0b; --low:#16a34a;
+}
+.dark{
+  --bg:#0f172a; --card:#020617; --text:#e5e7eb;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;font-family:system-ui;background:var(--bg);color:var(--text);
+  display:flex;justify-content:center;padding:20px;transition:0.3s;
+}
+.app{
+  width:650px;background:var(--card);border-radius:16px;padding:20px;
+  box-shadow:0 20px 40px rgba(0,0,0,.15);transition:0.3s;
+}
+header{display:flex;justify-content:space-between;align-items:center;}
+h1{font-size:24px;}
+button{
+  cursor:pointer;border:none;border-radius:6px;padding:6px 10px;transition:.3s;
+}
+button:hover{opacity:.85;}
+.toggle{background:var(--accent);color:white;}
+.tabs{display:flex;gap:10px;margin-top:10px;}
+.tab{
+  cursor:pointer;padding:6px 12px;border-radius:6px;
+  background:#e5e7eb;color:#111827;transition:0.3s;
+}
+.tab.active{background:var(--accent);color:white;}
+.section{margin-top:16px;}
+input,select{
+  width:100%;padding:8px;margin:4px 0;border-radius:6px;border:1px solid #ccc;
+}
+.add-btn{background:var(--accent);color:white;width:100%;margin-top:6px;}
+ul{list-style:none;padding:0;}
+li{
+  background:linear-gradient(135deg,#ffffff,#e5e7eb);padding:12px;margin-bottom:10px;
+  border-radius:12px;display:flex;justify-content:space-between;align-items:center;
+  transition:0.3s;box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+li:hover{
+  transform:scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,0.1);
+}
+.circle{
+  width:26px;height:26px;border-radius:50%;display:inline-block;
+  transition:.3s;cursor:pointer;
+}
+.circle.completed{background:linear-gradient(135deg,#16a34a,#4ade80);animation:bounce 0.3s;}
+.circle.pending{background:var(--pending);}
+.streak-container{display:flex;gap:5px;margin-top:6px;}
+.category,.badge{
+  font-size:12px;padding:2px 6px;border-radius:4px;color:white;margin-left:6px;
+}
+.high{background:var(--high);}
+.medium{background:var(--medium);}
+.low{background:var(--low);}
+.edit-btn,.del-btn{margin-left:6px;}
+.reward{
+  margin-top:4px;font-size:13px;font-weight:bold;color:#f59e0b;transition:0.3s;
+}
+.chart{display:flex;gap:3px;margin-top:6px;}
+.bar{width:12px;background:var(--accent);border-radius:4px;transition:0.5s;height:0;}
+.completed-task{text-decoration:line-through;opacity:.6;}
+.progress{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px;}
+.bar-task{
+  height:100%;background:linear-gradient(90deg,#4ade80,#16a34a);
+  width:0%;transition:0.5s;
+}
+small{opacity:.75;display:block;margin-top:4px;}
+.filter-btn{
+  margin:2px;padding:4px 8px;border-radius:4px;border:1px solid #ccc;
+  cursor:pointer;transition:0.3s;background:white;
+}
+.filter-btn.active{background:var(--accent);color:white;}
+.search-input{
+  width:100%;padding:6px;margin-top:4px;border-radius:6px;border:1px solid #ccc;
+}
+
+/* Animations */
+@keyframes bounce{
+  0%{transform:scale(0.8);}
+  50%{transform:scale(1.2);}
+  100%{transform:scale(1);}
+}
+@keyframes glow{
+  0%{box-shadow:0 0 5px #f59e0b;}
+  50%{box-shadow:0 0 15px #f59e0b;}
+  100%{box-shadow:0 0 5px #f59e0b;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <h1> FlowTracker </h1>
+  <button class="toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="tasks">Tasks</div>
+  <div class="tab" data-tab="habits">Habits</div>
+  <div class="tab" data-tab="history">History</div>
+</div>
+
+<!-- Tasks -->
+<div class="section" id="tasksSection">
+  <h3>Today’s Tasks</h3>
+  <input id="taskText" placeholder="What do you want to get done?">
+  <input type="time" id="taskTime">
+  <select id="taskPriority">
+    <option value="low">Low priority</option>
+    <option value="medium">Medium priority</option>
+    <option value="high">High priority</option>
+  </select>
+  <button class="add-btn" id="addTaskBtn">➕ Add to today</button>
+
+  <div style="margin-top:6px;">
+    Filter:
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="completed">Done</button>
+    <button class="filter-btn" data-filter="pending">Not done yet</button>
+  </div>
+
+  <ul id="taskList"></ul>
+
+  <div>
+    <p>
+      ✅ Done: <strong id="doneCount">0</strong> |
+      ⏳ Left: <strong id="pendingCount">0</strong>
+    </p>
+    <div class="progress"><div class="bar-task" id="barTask"></div></div>
+    <small id="percentText">0% of today completed</small>
+  </div>
+</div>
+
+<!-- Habits -->
+<div class="section" id="habitsSection" style="display:none;">
+  <h3> Habit Streaks</h3>
+  <input id="habitText" placeholder="Name your habit (e.g. Drink water)">
+  <select id="habitCategory">
+    <option value="Exercise">Exercise</option>
+    <option value="Coding">Coding</option>
+    <option value="Reading">Reading</option>
+    <option value="Walking">Walking</option>
+    <option value="Fitness">Fitness</option>
+    <option value="Exercises">Exercises</option>
+    <option value="Yoga">Yoga</option>
+    <option value="Listenng">Listenng</option>
+    <option value="Meditation">Meditation</option>
+  </select>
+  <button class="add-btn" id="addHabitBtn">➕ Add habit</button>
+  <ul id="habitList"></ul>
+</div>
+
+<!-- History -->
+<div class="section" id="historySection" style="display:none;">
+  <h3> Activity List</h3>
+  <input class="search-input" id="historySearch" placeholder="Search your past actions...">
+  <button id="clearHistoryBtn"> Clear History</button>
+  <ul id="historyList"></ul>
+</div>
+
+</div>
+
+<script>
+/* ---------- State ---------- */
+let tasks  = JSON.parse(localStorage.getItem("tasks"))  || [];
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+let history = JSON.parse(localStorage.getItem("history")) || [];
+let taskFilter = 'all';
+
+/* ---------- DOM Shortcuts ---------- */
+const taskText       = document.getElementById('taskText');
+const taskTime       = document.getElementById('taskTime');
+const taskPriority   = document.getElementById('taskPriority');
+const taskList       = document.getElementById('taskList');
+const doneCount      = document.getElementById('doneCount');
+const pendingCount   = document.getElementById('pendingCount');
+const barTask        = document.getElementById('barTask');
+const percentText    = document.getElementById('percentText');
+const habitText      = document.getElementById('habitText');
+const habitCategory  = document.getElementById('habitCategory');
+const habitList      = document.getElementById('habitList');
+const historyList    = document.getElementById('historyList');
+const historySearch  = document.getElementById('historySearch');
+
+/* ---------- Save ---------- */
+function saveData() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem("habits", JSON.stringify(habits));
+  localStorage.setItem("history", JSON.stringify(history));
+}
+
+/* ---------- Tabs (using data-tab) ---------- */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.getAttribute('data-tab');
+    document.getElementById('tasksSection').style.display   = target === 'tasks' ? 'block' : 'none';
+    document.getElementById('habitsSection').style.display  = target === 'habits' ? 'block' : 'none';
+    document.getElementById('historySection').style.display = target === 'history' ? 'block' : 'none';
+
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+/* ---------- Tasks ---------- */
+document.getElementById('addTaskBtn').addEventListener('click', addTask);
+
+function addTask() {
+  if (!taskText.value.trim()) return;
+  const t = {
+    id: Date.now(),
+    text: taskText.value.trim(),
+    time: taskTime.value,
+    priority: taskPriority.value,
+    done: false
+  };
+  tasks.push(t);
+  addToHistory("Added task", t.text);
+  taskText.value = "";
+  taskTime.value = "";
+  saveData();
+  renderApp();
+}
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  addToHistory(t.done ? "Marked as done" : "Marked as not done", t.text);
+  saveData();
+  renderApp();
+}
+
+function editTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const n = prompt("Update this task:", t.text);
+  if (n && n.trim()) {
+    t.text = n.trim();
+    addToHistory("Edited task", t.text);
+    saveData();
+    renderApp();
+  }
+}
+
+function deleteTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  tasks = tasks.filter(x => x.id !== id);
+  addToHistory("Deleted task", t.text);
+  saveData();
+  renderApp();
+}
+
+/* Filter buttons */
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    taskFilter = btn.getAttribute('data-filter');
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderApp();
+  });
+});
+
+/* ---------- Habits ---------- */
+document.getElementById('addHabitBtn').addEventListener('click', addHabit);
+
+function addHabit() {
+  if (!habitText.value.trim()) return;
+  const h = {
+    id: Date.now(),
+    name: habitText.value.trim(),
+    category: habitCategory.value,
+    streak: Array(7).fill(false)
+  };
+  habits.push(h);
+  addToHistory("Added habit", h.name);
+  habitText.value = "";
+  saveData();
+  renderApp();
+}
+
+function toggleDay(hid, day) {
+  const h = habits.find(x => x.id === hid);
+  if (!h) return;
+  h.streak[day] = !h.streak[day];
+  addToHistory(h.streak[day] ? "Checked habit day" : "Unchecked habit day", h.name);
+  saveData();
+  renderApp();
+}
+
+function editHabit(hid) {
+  const h = habits.find(x => x.id === hid);
+  if (!h) return;
+  const n = prompt("Update this habit:", h.name);
+  if (n && n.trim()) {
+    h.name = n.trim();
+    addToHistory("Edited habit", h.name);
+    saveData();
+    renderApp();
+  }
+}
+
+function deleteHabit(hid) {
+  const h = habits.find(x => x.id === hid);
+  if (!h) return;
+  habits = habits.filter(x => x.id !== hid);
+  addToHistory("Deleted habit", h.name);
+  saveData();
+  renderApp();
+}
+
+/* ---------- History ---------- */
+function addToHistory(action, name) {
+  history.unshift({ action, name, time: new Date().toLocaleString() });
+  history = history.slice(0, 50);
+  saveData();
+}
+
+document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+  if (confirm("Clear your activity log? This can’t be undone.")) {
+    history = [];
+    localStorage.removeItem("history");
+    renderApp();
+  }
+});
+
+historySearch.addEventListener('input', renderApp);
+
+/* ---------- Render ---------- */
+function renderApp() {
+  // Tasks
+  taskList.innerHTML = "";
+  tasks
+    .filter(t => taskFilter === 'all' ? true : taskFilter === 'completed' ? t.done : !t.done)
+    .forEach(t => {
+      const li = document.createElement("li");
+      li.className = t.done ? "completed-task" : "";
+      li.innerHTML = `
+        <span title="Tap to mark done / not done" style="flex:1;cursor:pointer;">
+          ${t.text}
+        </span>
+        <span class="badge ${t.priority}">${t.priority}</span>
+        <div>
+          <button title="Edit task">✏️</button>
+          <button title="Delete task">🗑</button>
+        </div>
+      `;
+      /* Attach events */
+      li.querySelector('span').addEventListener('click', () => toggleTask(t.id));
+      const [editBtn, delBtn] = li.querySelectorAll('button');
+      editBtn.addEventListener('click', () => editTask(t.id));
+      delBtn.addEventListener('click', () => deleteTask(t.id));
+      taskList.appendChild(li);
+    });
+
+  const completed = tasks.filter(t => t.done).length;
+  const total = tasks.length;
+  const pending = total - completed;
+  doneCount.textContent = completed;
+  pendingCount.textContent = pending;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+  barTask.style.width = percent + "%";
+  percentText.textContent = percent + "% of today completed";
+
+  // Habits
+  habitList.innerHTML = "";
+  habits.forEach(h => {
+    const li = document.createElement("li");
+    const streakHtml = h.streak
+      .map((d, i) => `<span class="circle ${d ? 'completed' : 'pending'}" data-day="${i}"></span>`)
+      .join("");
+    const completedDays = h.streak.filter(d => d).length;
+    const success = Math.round((completedDays / 7) * 100);
+    let reward = "";
+    if (completedDays >= 7)      reward = "🏆 Weekly Gold streak!";
+    else if (completedDays >= 5) reward = "🥈 Strong week!";
+    else if (completedDays >= 3) reward = "🥉 Nice start, keep going!";
+
+    const chart = h.streak
+      .map(d => `<div class="bar" style="height:${d ? 20 : 5}px"></div>`)
+      .join("");
+
+    li.innerHTML = `
+      <div style="flex:1;">
+        <strong>${h.name}</strong> <span class="category">${h.category}</span>
+        <div class="streak-container">${streakHtml}</div>
+        <div class="chart">${chart}</div>
+        <small>
+          Streak: ${completedDays} day(s) | Success: ${success}%
+          <button title="Edit habit">✏️</button>
+          <button title="Delete habit">🗑</button>
+        </small>
+        <div class="reward" style="${reward ? 'animation:glow 1s infinite;' : ''}">${reward}</div>
+      </div>
+    `;
+    /* Attach events */
+    li.querySelectorAll('.circle').forEach(circle => {
+      const day = Number(circle.getAttribute('data-day'));
+      circle.addEventListener('click', () => toggleDay(h.id, day));
+    });
+    const [editBtn, delBtn] = li.querySelectorAll('button');
+    editBtn.addEventListener('click', () => editHabit(h.id));
+    delBtn.addEventListener('click', () => deleteHabit(h.id));
+
+    habitList.appendChild(li);
+  });
+
+  // History
+  const searchVal = historySearch.value.toLowerCase();
+  historyList.innerHTML = "";
+  history
+    .filter(h => h.name.toLowerCase().includes(searchVal))
+    .forEach(h => {
+      const li = document.createElement("li");
+      li.innerHTML = `<small>${h.time}</small><br>${h.action}: ${h.name}`;
+      historyList.appendChild(li);
+    });
+}
+
+/* ---------- Dark Mode ---------- */
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+}
+
+/* ---------- Initial ---------- */
+renderApp();
+</script>
+</body>
+</html>
